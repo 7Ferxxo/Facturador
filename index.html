@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recibos de Compra</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <form id="facturaForm">
+        <div class="form-header">
+            <img src="imagenes/logo.png" alt="Logo PGT Logistics" class="logo">
+            <h1>Nuevo Recibo de Compra</h1>
+        </div>
+        <p>
+            <label for="cliente">Recibimos de:</label>
+            <input type="text" id="cliente" name="cliente" required>
+        </p>
+        <p>
+            <label for="casillero">Número de Casillero:</label>
+            <input type="text" id="casillero" name="casillero" required>
+        </p>
+        <p>
+            <label for="monto">La suma de:</label>
+            <input type="number" id="monto" name="monto" step="0.01" required>
+        </p>
+        <p>
+            <label for="concepto">En concepto de:</label>
+            <input type="text" id="concepto" name="concepto" required>
+        </p>
+        <p>
+            <label for="email_cliente">Email del Cliente:</label>
+            <input type="email" id="email_cliente" name="email_cliente" required>
+        </p>
+        <p>
+            <label for="fecha">Fecha:</label>
+            <input type="date" id="fecha" name="fecha" required>
+        </p>
+        <button type="submit">Generar Recibo</button>
+    </form>
+    <script src="main.js"></script>
+</body>
+</html>
