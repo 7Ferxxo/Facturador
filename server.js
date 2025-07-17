@@ -1,8 +1,9 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const PDFDocument = require('pdfkit');
 const fs = require('fs');
+const path = require('path');
+const puppeteer = require('puppeteer');
 const nodemailer = require('nodemailer');
 const sqlite3 = require('sqlite3');
 const { open } = require('sqlite');
@@ -17,20 +18,20 @@ let db;
         filename: './recibos.db',
         driver: sqlite3.Database
     });
-
     await db.exec(`
         CREATE TABLE IF NOT EXISTS recibos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             cliente TEXT NOT NULL,
             casillero TEXT,
+            sucursal TEXT,
             monto REAL NOT NULL,
             concepto TEXT,
+            metodo_pago TEXT,
             fecha TEXT,
             email_cliente TEXT
         )
     `);
 })();
-
 
 app.use(cors());
 app.use(express.json());
@@ -46,74 +47,71 @@ const transporter = nodemailer.createTransport({
 app.post('/crear-factura', async (req, res) => {
     try {
         const datos = req.body;
-
         await db.run(
-            'INSERT INTO recibos (cliente, casillero, monto, concepto, fecha, email_cliente) VALUES (?, ?, ?, ?, ?, ?)',
-            [datos.cliente, datos.casillero, datos.monto, datos.concepto, datos.fecha, datos.email_cliente]
+            'INSERT INTO recibos (cliente, casillero, sucursal, monto, concepto, metodo_pago, fecha, email_cliente) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [datos.cliente, datos.casillero, datos.sucursal, datos.monto, datos.concepto, datos.metodo_pago, datos.fecha, datos.email_cliente]
         );
         console.log('Recibo guardado en la base de datos.');
 
-        const doc = new PDFDocument({ size: 'A4', margin: 50 });
-        const nombreArchivo = `recibo-${datos.casillero}-${Date.now()}.pdf`;
-        const stream = fs.createWriteStream(nombreArchivo);
-        doc.pipe(stream);
+        const htmlTemplate = fs.readFileSync(path.join(__dirname, 'recibo-template.html'), 'utf-8');
+        const cssTemplate = fs.readFileSync(path.join(__dirname, 'recibo-style.css'), 'utf-8');
+        const logoPath = path.join(__dirname, 'imagenes', 'logo.png');
+        const logoBase64 = fs.readFileSync(logoPath).toString('base64');
+        const logoDataUri = `data:image/png;base64,${logoBase64}`;
 
-        doc.image('imagenes/logo.png', 50, 45, { width: 100 });
-        doc.fontSize(20).font('Helvetica-Bold').text('RECIBO DE COMPRA', 200, 57, { align: 'right' });
-        doc.fontSize(10).font('Helvetica').text('PGT Logistics', 200, 80, { align: 'right' });
-
-        doc.moveTo(50, 150).lineTo(550, 150).stroke();
-
-        const customerInfoTop = 170;
-        doc.fontSize(11).font('Helvetica-Bold').text('Recibo Para:', 50, customerInfoTop);
-        doc.font('Helvetica').text(datos.cliente, 50, customerInfoTop + 15);
-        doc.text(`Casillero: ${datos.casillero}`, 50, customerInfoTop + 30);
-
-        doc.font('Helvetica-Bold').text('Fecha:', 400, customerInfoTop);
-        doc.font('Helvetica').text(datos.fecha, 450, customerInfoTop);
-
-        doc.moveDown(4);
-
-        doc.font('Helvetica-Bold').text('Concepto', 50, doc.y);
-        doc.moveDown(0.5);
-        doc.font('Helvetica').text(datos.concepto, { width: 400 });
-
-        const totalY = doc.y + 30;
-        doc.fontSize(14).font('Helvetica-Bold').text('Total a Pagar:', 50, totalY, { align: 'right', width: 420 });
-        doc.text(`$${parseFloat(datos.monto).toFixed(2)}`, 0, totalY, { align: 'right' });
-
-        const footerY = doc.page.height - 100;
-        doc.moveTo(50, footerY).lineTo(550, footerY).stroke();
-        doc.fontSize(10).font('Helvetica-Oblique').text('¡Gracias por preferirnos y por su compra!', 50, footerY + 15, {
-            align: 'center',
-            width: 500
-        });
+        let finalHtml = htmlTemplate
+            .replace('{{cliente}}', datos.cliente)
+            .replace('{{casillero}}', datos.casillero)
+            .replace('{{sucursal}}', datos.sucursal)
+            .replace('{{monto}}', parseFloat(datos.monto).toFixed(2))
+            .replace('{{concepto}}', datos.concepto)
+            .replace('{{metodo_pago}}', datos.metodo_pago)
+            .replace('{{fecha}}', datos.fecha)
+            .replace('{{logo}}', logoDataUri);
         
-        doc.end();
+        finalHtml = finalHtml.replace('<link rel="stylesheet" href="recibo-style.css">', `<style>${cssTemplate}</style>`);
+        
+        const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
+        const page = await browser.newPage();
+        await page.setContent(finalHtml, { waitUntil: 'networkidle0' });
+        const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
+        await browser.close();
+        
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: datos.email_cliente,
+            subject: `Nuevo Recibo de Compra PGT Logistics para ${datos.cliente}`,
+            text: `
+📦 RECIBO DE COMPRA - PGT LOGISTICS
 
-        stream.on('finish', () => {
-            const mailOptions = {
-                from: process.env.EMAIL_USER,
-                to: datos.email_cliente,
-                subject: `Nuevo Recibo de Compra PGT Logistics para ${datos.cliente}`,
-                text: `Estimado(a) ${datos.cliente},\n\nAdjunto encontrará su recibo de compra en formato PDF.\n\nGracias por su preferencia,\nPGT Logistics`,
-                attachments: [{ filename: nombreArchivo, path: nombreArchivo }]
-            };
+🗓 Fecha: ${datos.fecha}
 
-            transporter.sendMail(mailOptions, (error, info) => {
-                if (error) {
-                    console.error('Error al enviar el email:', error);
-                    return res.status(500).json({ message: 'Error al enviar el email.' });
-                }
-                console.log('Email enviado: ' + info.response);
-                fs.unlinkSync(nombreArchivo);
-                res.json({ message: 'Recibo creado, guardado y enviado por email con éxito.' });
-            });
+⸻
+
+🔹 Información del Cliente
+• Nombre: ${datos.cliente}
+• Casillero: ${datos.casillero}
+• Sucursal: ${datos.sucursal}
+            `,
+            attachments: [{
+                filename: `recibo-${datos.casillero}.pdf`,
+                content: pdfBuffer,
+                contentType: 'application/pdf'
+            }]
+        };
+
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                console.error('Error al enviar el email:', error);
+                return res.status(500).json({ message: 'Error al enviar el email.' });
+            }
+            console.log('Email enviado: ' + info.response);
+            res.json({ message: 'Recibo creado, guardado y enviado por email con éxito.' });
         });
 
-    } catch (dbError) {
-        console.error('Error con la base de datos:', dbError);
-        res.status(500).json({ message: 'Error al guardar el recibo en la base de datos.' });
+    } catch (error) {
+        console.error('Error en el proceso de creación de factura:', error);
+        res.status(500).json({ message: 'Error interno del servidor.' });
     }
 });
 

@@ -45,12 +45,14 @@ label {
 input[type="text"],
 input[type="number"],
 input[type="date"],
-input[type="email"] {
+input[type="email"],
+select {
     width: 100%;
     padding: 10px;
     border: 1px solid #dddddd;
     border-radius: 5px;
     box-sizing: border-box;
+    font-size: 14px; /* Añadido para consistencia */
 }
 
 button {
@@ -67,4 +69,9 @@ button {
 
 button:hover {
     background-color: #c62828;
+}
+button:disabled {
+    background-color: #c62828;
+    opacity: 0.7;
+    cursor: not-allowed;
 }

@@ -1,13 +1,20 @@
 const formulario = document.querySelector('#facturaForm');
+const botonEnviar = formulario.querySelector('button'); // Seleccionamos el botón
 
 formulario.addEventListener('submit', (evento) => {
     evento.preventDefault(); 
 
+    // Inicia el estado de carga
+    botonEnviar.disabled = true;
+    botonEnviar.textContent = 'Enviando...';
+
     const datosRecibo = {
         cliente: document.querySelector('#cliente').value,
         casillero: document.querySelector('#casillero').value,
+        sucursal: document.querySelector('#sucursal').value,
         monto: document.querySelector('#monto').value,
         concepto: document.querySelector('#concepto').value,
+        metodo_pago: document.querySelector('#metodo_pago').value,
         fecha: document.querySelector('#fecha').value,
         email_cliente: document.querySelector('#email_cliente').value
     };
@@ -28,5 +35,10 @@ formulario.addEventListener('submit', (evento) => {
     .catch((error) => {
         console.error('Error:', error);
         alert('Hubo un error al enviar el recibo.');
+    })
+    .finally(() => {
+        // Restaura el botón a su estado original
+        botonEnviar.disabled = false;
+        botonEnviar.textContent = 'Generar Recibo';
     });
 });

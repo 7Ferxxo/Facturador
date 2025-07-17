@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Recibo de Compra</title>
+    <link rel="stylesheet" href="recibo-style.css">
+</head>
+<body>
+    <div class="receipt-container">
+        <div class="header">
+            <img src="{{logo}}" alt="Logo" class="logo">
+            <h1>RECIBO DE COMPRA - PGT LOGISTICS</h1>
+        </div>
+        <div class="main-content">
+            <div class="customer-info">
+                <h2>Información del Cliente</h2>
+                <p><strong>Nombre:</strong> {{cliente}}</p>
+                <p><strong>Casillero:</strong> {{casillero}}</p>
+                <p><strong>Sucursal:</strong> {{sucursal}}</p>
+            </div>
+            <div class="purchase-details">
+                <h2>Detalle de la Compra</h2>
+                <div class="item">
+                    <p class="description"><strong>Descripción:</strong> {{concepto}}</p>
+                    <p class="price"><strong>Total:</strong> ${{monto}}</p>
+                </div>
+            </div>
+            <div class="payment-info">
+                <p><strong>Pago realizado correctamente.</strong></p>
+                <p>Método de Pago: {{metodo_pago}}</p>
+            </div>
+        </div>
+        <div class="footer">
+            <p>PGT Logistics - RUC: 155702607-2-2021</p>
+            <p>WhatsApp: +507 6197-3535 | Email: info@pgtlogistics.com | Web: www.pgtlogistics.com</p>
+            <p>¡Gracias por preferirnos!</p>
+        </div>
+    </div>
+</body>
+</html>
