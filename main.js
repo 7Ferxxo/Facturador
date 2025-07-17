@@ -1,10 +1,9 @@
 const formulario = document.querySelector('#facturaForm');
-const botonEnviar = formulario.querySelector('button'); // Seleccionamos el botón
+const botonEnviar = formulario.querySelector('button');
 
 formulario.addEventListener('submit', (evento) => {
     evento.preventDefault(); 
 
-    // Inicia el estado de carga
     botonEnviar.disabled = true;
     botonEnviar.textContent = 'Enviando...';
 
@@ -19,7 +18,7 @@ formulario.addEventListener('submit', (evento) => {
         email_cliente: document.querySelector('#email_cliente').value
     };
 
-    fetch('http://localhost:3000/crear-factura', {
+    fetch('/crear-factura', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -37,7 +36,6 @@ formulario.addEventListener('submit', (evento) => {
         alert('Hubo un error al enviar el recibo.');
     })
     .finally(() => {
-        // Restaura el botón a su estado original
         botonEnviar.disabled = false;
         botonEnviar.textContent = 'Generar Recibo';
     });

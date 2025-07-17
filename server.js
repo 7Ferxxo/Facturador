@@ -9,7 +9,7 @@ const sqlite3 = require('sqlite3');
 const { open } = require('sqlite');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 let db;
 
@@ -35,6 +35,7 @@ let db;
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static(__dirname));
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -81,18 +82,7 @@ app.post('/crear-factura', async (req, res) => {
             from: process.env.EMAIL_USER,
             to: datos.email_cliente,
             subject: `Nuevo Recibo de Compra PGT Logistics para ${datos.cliente}`,
-            text: `
-📦 RECIBO DE COMPRA - PGT LOGISTICS
-
-🗓 Fecha: ${datos.fecha}
-
-⸻
-
-🔹 Información del Cliente
-• Nombre: ${datos.cliente}
-• Casillero: ${datos.casillero}
-• Sucursal: ${datos.sucursal}
-            `,
+            text: `Estimado(a) ${datos.cliente},\n\nAdjunto encontrará su recibo de compra en formato PDF.\n\nGracias por su preferencia,\nPGT Logistics`,
             attachments: [{
                 filename: `recibo-${datos.casillero}.pdf`,
                 content: pdfBuffer,
