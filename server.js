@@ -3,8 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
-const puppeteer = require('puppeteer-core'); // Cambiado a puppeteer-core
-const chromium = require('chrome-aws-lambda'); // Nuevo paquete
+const puppeteer = require('puppeteer-core');
+const chromium = require('chrome-aws-lambda');
 const nodemailer = require('nodemailer');
 const { Pool } = require('pg');
 
@@ -13,11 +13,24 @@ const PORT = process.env.PORT || 3000;
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
+    ssl: {
+        rejectUnauthorized: false
+    }
 });
 
 (async () => {
-    const createTableQuery = `CREATE TABLE IF NOT EXISTS recibos (id SERIAL PRIMARY KEY, cliente TEXT NOT NULL, casillero TEXT, sucursal TEXT, monto NUMERIC(10, 2) NOT NULL, concepto TEXT, metodo_pago TEXT, fecha TEXT, email_cliente TEXT);`;
+    const createTableQuery = `
+        CREATE TABLE IF NOT EXISTS recibos (
+            id SERIAL PRIMARY KEY,
+            cliente TEXT NOT NULL,
+            casillero TEXT,
+            sucursal TEXT,
+            monto NUMERIC(10, 2) NOT NULL,
+            concepto TEXT,
+            metodo_pago TEXT,
+            fecha TEXT,
+            email_cliente TEXT
+        );`;
     try {
         await pool.query(createTableQuery);
         console.log('Tabla "recibos" verificada/creada con éxito.');
@@ -32,14 +45,20 @@ app.use(express.static(__dirname));
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
-    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+    }
 });
 
 app.post('/crear-factura', async (req, res) => {
     let browser = null;
     try {
         const datos = req.body;
-        const insertQuery = `INSERT INTO recibos (cliente, casillero, sucursal, monto, concepto, metodo_pago, fecha, email_cliente) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`;
+        const insertQuery = `
+            INSERT INTO recibos (cliente, casillero, sucursal, monto, concepto, metodo_pago, fecha, email_cliente) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        `;
         await pool.query(insertQuery, [datos.cliente, datos.casillero, datos.sucursal, datos.monto, datos.concepto, datos.metodo_pago, datos.fecha, datos.email_cliente]);
         console.log('Recibo guardado en la base de datos PostgreSQL.');
 
@@ -52,20 +71,29 @@ app.post('/crear-factura', async (req, res) => {
         let finalHtml = htmlTemplate.replace('{{cliente}}', datos.cliente).replace('{{casillero}}', datos.casillero).replace('{{sucursal}}', datos.sucursal).replace('{{monto}}', parseFloat(datos.monto).toFixed(2)).replace('{{concepto}}', datos.concepto).replace('{{metodo_pago}}', datos.metodo_pago).replace('{{fecha}}', datos.fecha).replace('{{logo}}', logoDataUri);
         finalHtml = finalHtml.replace('<link rel="stylesheet" href="recibo-style.css">', `<style>${cssTemplate}</style>`);
         
-        // --- Cambios para Puppeteer en Producción ---
         browser = await puppeteer.launch({
             args: chromium.args,
             defaultViewport: chromium.defaultViewport,
-            executablePath: await chromium.executablePath,
+            executablePath: await chromium.executablePath(),
             headless: chromium.headless,
         });
-        // --- Fin de los Cambios ---
 
         const page = await browser.newPage();
         await page.setContent(finalHtml, { waitUntil: 'networkidle0' });
         const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
         
-        const mailOptions = { from: process.env.EMAIL_USER, to: datos.email_cliente, subject: `Nuevo Recibo de Compra PGT Logistics para ${datos.cliente}`, text: `Estimado(a) ${datos.cliente},\n\nAdjunto encontrará su recibo de compra en formato PDF.\n\nGracias por su preferencia,\nPGT Logistics`, attachments: [{ filename: `recibo-${datos.casillero}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }] };
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: datos.email_cliente,
+            subject: `Nuevo Recibo de Compra PGT Logistics para ${datos.cliente}`,
+            text: `Estimado(a) ${datos.cliente},\n\nAdjunto encontrará su recibo de compra en formato PDF.\n\nGracias por su preferencia,\nPGT Logistics`,
+            attachments: [{
+                filename: `recibo-${datos.casillero}.pdf`,
+                content: pdfBuffer,
+                contentType: 'application/pdf'
+            }]
+        };
+
         transporter.sendMail(mailOptions, (error, info) => {
             if (error) {
                 console.error('Error al enviar el email:', error);
