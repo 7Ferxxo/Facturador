@@ -3,8 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
-const puppeteer = require('puppeteer-core');
-const chromium = require('chrome-aws-lambda');
+const puppeteer = require('puppeteer');
 const nodemailer = require('nodemailer');
 const { Pool } = require('pg');
 
@@ -72,10 +71,7 @@ app.post('/crear-factura', async (req, res) => {
         finalHtml = finalHtml.replace('<link rel="stylesheet" href="recibo-style.css">', `<style>${cssTemplate}</style>`);
         
         browser = await puppeteer.launch({
-            args: chromium.args,
-            defaultViewport: chromium.defaultViewport,
-            executablePath: chromium.executablePath,
-            headless: chromium.headless,
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
 
         const page = await browser.newPage();
