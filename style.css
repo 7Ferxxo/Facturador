@@ -52,7 +52,7 @@ select {
     border: 1px solid #dddddd;
     border-radius: 5px;
     box-sizing: border-box;
-    font-size: 14px; /* Añadido para consistencia */
+    font-size: 14px;
 }
 
 button {
@@ -70,6 +70,7 @@ button {
 button:hover {
     background-color: #c62828;
 }
+
 button:disabled {
     background-color: #c62828;
     opacity: 0.7;
