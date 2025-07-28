@@ -4,8 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "npx puppeteer browsers install chrome"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "engines": {
     "node": "18.x"
@@ -19,6 +18,6 @@
     "express": "^4.19.2",
     "nodemailer": "^6.9.13",
     "pg": "^8.11.5",
-    "puppeteer": "^22.10.0"
+    "pdfkit": "^0.15.0"
   }
 }
