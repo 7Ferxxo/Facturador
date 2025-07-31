@@ -18,7 +18,7 @@ formulario.addEventListener('submit', (evento) => {
         email_cliente: document.querySelector('#email_cliente').value
     };
 
-    fetch('/crear-factura', {
+    fetch('http://localhost:3000/crear-factura', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'

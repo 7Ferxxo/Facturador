@@ -76,3 +76,7 @@ button:disabled {
     opacity: 0.7;
     cursor: not-allowed;
 }
+.dashboard-link {
+    text-align: center;
+    margin-top: 20px;
+}
